@@ -75,7 +75,7 @@ function calc_mu($Nw,$Np,$Temp,$FEner) {
 	  $Temp*$FEner);
 }
 
-function erf($x) {
+function erfc($x) {
     # constants
     $a1 =  0.254829592;
     $a2 = -0.284496736;
@@ -95,7 +95,7 @@ function erf($x) {
     # Handbook of Mathematical Functions with Formulas, Graphs, and Mathematical Tables. Dover.
     # Formula 7.1.26
     $t = 1.0/(1.0 + $p*$x);
-    $y = 1.0 - ((((($a5*$t + $a4)*$t) + $a3)*$t + $a2)*$t + $a1)*$t*exp(-$x*$x);
+    $y = ((((($a5*$t + $a4)*$t) + $a3)*$t + $a2)*$t + $a1)*$t*exp(-$x*$x);
 
     return $sign*$y;
 }
@@ -185,7 +185,7 @@ _LAYOUT3_;
     $forward = 1;
     $iter    = 0;
     $T1      = $T[$index];
-    $T2      = $T1+5;
+    $T2      = $T1+1;
     if ( $T2 >= Thigh ) { 
        $T2 = Thigh;
     }
@@ -214,8 +214,8 @@ _LAYOUT3_;
 	exit(1);
       }
       // I1
-      $erfarg1 = -$mu12/($sig12*sqrt(2));
-      $I1      = 0.5*(1 + erf($erfarg1));
+      $erfarg1 = $mu12/($sig12*sqrt(2));
+      $I1      = 0.5*(erfc($erfarg1));
 
       // I2
       // Old analytical code according to the paper, however
