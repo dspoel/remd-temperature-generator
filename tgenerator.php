@@ -101,7 +101,7 @@ function erf($x) {
 }
 
 function myeval($m12, $s12, $CC, $u) {
-  $argument = -$CC*$u - ($u-$m12)**2/(2*$s12**2);
+  $argument = -$CC*$u - ($u-$m12)*($u-$m12)/(2*$s12*$s12);
   return exp($argument);
 }
 
