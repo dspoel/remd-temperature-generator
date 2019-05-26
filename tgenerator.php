@@ -18,8 +18,6 @@ define("Vs",$_POST['Vs']);
 define("Alg",$_POST['Alg']);
 
 // Constants. May depend on input in principle (but not yet).
-//define("A1","0.07584");
-//define("B1","0.01293");
 define("A0","-59.2194");
 define("A1","0.07594");
 define("B0","-22.8396");
@@ -93,11 +91,33 @@ function erf($x) {
     }
     $x = abs($x);
 
-    # A&S formula 7.1.26
+    # Abramowitz, M. and Stegun, I. A. 1972. 
+    # Handbook of Mathematical Functions with Formulas, Graphs, and Mathematical Tables. Dover.
+    # Formula 7.1.26
     $t = 1.0/(1.0 + $p*$x);
     $y = 1.0 - ((((($a5*$t + $a4)*$t) + $a3)*$t + $a2)*$t + $a1)*$t*exp(-$x*$x);
 
     return $sign*$y;
+}
+
+function myeval($m12, $s12, $CC, $u) {
+  $argument = -$CC*$u - ($u-$m12)**2/(2*$s12**2);
+  return exp($argument);
+}
+
+function myintegral($m12, $s12, $CC) {
+  $int  = 0.0;
+  $umax = $m12+5*$s12;
+  $du   = 0.5;
+  if ($debug > 1) {
+    print("umax = $umax m12 = $m12 s12 = $s12 CC = $CC<br>");
+  }
+  for($u = 0; $u<$umax; $u+=$du) {
+    $di = myeval($m12, $s12, $CC, $u+$du/2);
+    $int += $di;
+  }
+  $pi = 3.14159265358979;
+  return $du*$int/($s12*sqrt(2*$pi));
 }
 
 if ($error == 0) {
@@ -157,10 +177,6 @@ _LAYOUT3_;
 
 /////////////////////
 
-//  $perl = Perl::getInstance();
-//  $perl->eval('use Games::Go::Erf qw(:all);');
-//  $perl->eval('sub myErf { my $x = shift; return erf($x); }');
-
   $index = 1;
   $T[$index] = Tlow;
   
@@ -169,18 +185,24 @@ _LAYOUT3_;
     $forward = 1;
     $iter    = 0;
     $T1      = $T[$index];
-    $T2      = $T1+1;
+    $T2      = $T1+5;
+    if ( $T2 >= Thigh ) { 
+       $T2 = Thigh;
+    }
     $low     = $T1;
     $high    = Thigh;
-    
+    if ($debug == 2) {
+      printf("<p>Index %d, T1 = %f, T2 = %f</p>\n", $index, $T1, $T2);
+    }
     while ( (abs($Pdes-$piter) > $Tol) && ($iter < maxiter) ) {
       $iter++;
       $mu12 = ($T2-$T1) * ((A1*$Nw)+(B1*$Nprot)-$FlexEner);
       $MM[$index] = $mu12;
       
-      $CC = (1/$kB) * ( (1/$T2)-(1/$T1) );
+      $CC    = (1/$kB) * ( (1/$T1)-(1/$T2) );
+      $Delta = $CC*$mu12;
       
-      $var = $Ndf*(D1*D1*( ($T1*$T1) + ($T2*$T2) ) +
+      $var = $Ndf*(D1*D1*( $T1*$T1 + $T2*$T2 ) +
 		   2*D1*D0*($T1+$T2) +
 		   2*D0*D0);
       
@@ -192,23 +214,30 @@ _LAYOUT3_;
 	exit(1);
       }
       // I1
-      $I11 = -$mu12/($sig12*sqrt(2));
-      $I1  = 1 + erf($I11); //$perl->eval("myErf($I11)");
+      $erfarg1 = -$mu12/($sig12*sqrt(2));
+      $I1      = 0.5*(1 + erf($erfarg1));
 
       // I2
-      $I21  = exp($CC*$mu12+($CC*$CC*$var)/2);
-      $I22  = ($mu12 + $CC*$var)/($sig12*sqrt(2));
-      
-      $I2   = $I21*(1.0 + erf($I22)); //$perl->eval("myErf($I22)"));
-      $piter = 0.5 * ($I1 + $I2);
+      // Old analytical code according to the paper, however
+      // this suffers from numerical issues in extreme cases.
+      // $exparg  = $CC*(-$mu12 + $CC*$var/2);
+      // $erfarg2 = ($mu12 - $CC*$var)/($sig12*sqrt(2));
+      // $I2      = 0.5*exp($exparg)*(1.0 + erf($erfarg2));
+      // Use numerical integration instead.
+      $I2      = myintegral($mu12, $sig12, $CC);
+      $piter   = ($I1 + $I2);
       
       if ($debug == 2) {
-	printf("<br>mu12 = $mu12, sig12 = $sig12<br>\n");
-	printf("<br>I11 = $I11, I1 = $I1<br>\n");
-	printf("<br>I21 = $I21, I22 = $I22, I2 = $I2<br>\n");
-	printf("<br>DT = %.3f, piter = $piter<br>\n",$T2-$T1);
+         printf("<p>\n");
+      	printf("DT = %.3f CC = %.4f<br>", $T2-$T1, $CC);
+	printf("mu12 = %.1f, sig12 = %.1f, Delta = %.1f<br>",
+               $mu12, $sig12, $Delta);
+	printf("erfarg1 = %.4f, Integral1 = %.4f<br>", $erfarg1, $I1);
+	//printf("exparg = %.2e, erfarg2 = %.1f<br>", $exparg, $erfarg2);
+        //printf("myintegral = %.4f, Integral2 = %.4f<br>", $myint, $I2);
+	printf("piter = %.3f<br>", $piter);
+        printf("</p>\n");
       }
-      
       
       if ( $piter > $Pdes ) {
 	if ( $forward==1 ) {
@@ -218,6 +247,9 @@ _LAYOUT3_;
 	  $low = $T2;
 	  $T2 = $low + (($high-$low)/2);
 	}
+        if ( $T2 >= Thigh ) { 
+           $T2 = Thigh;
+        }      
       }
       elseif ( $piter < $Pdes ) {
 	if ( $forward==1 ) {
@@ -228,7 +260,6 @@ _LAYOUT3_;
 	$T2 = $low + (($high-$low)/2);
       }
     }
-    
     
     $P[$index]      = $piter;
     $Siigma[$index] = sqrt($Ndf)* (D0 + D1*$T1);

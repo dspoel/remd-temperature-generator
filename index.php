@@ -5,6 +5,5 @@ showTitle();
 showIntro();
 showForm();
 showFooter();
-showCounter();
 
 ?>

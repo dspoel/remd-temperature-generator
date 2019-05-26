@@ -27,6 +27,11 @@ P<sub>des</sub>.  You can then use these temperatures in REMD
 simulations.
 </P>
 
+<P>
+The code for this webserver can be downloaded from github at 
+<a href="https://github.com/dspoel/remd">https://github.com/dspoel/remd</a>.
+</P>
+
 <p> A word of caution is in place here. The derivation of the
 parameters for the prediction was done with the OPLS/AA force field
 and the 
@@ -117,11 +122,6 @@ print <<<_KOE_
 _KOE_;
 }
 
-function showCounter()
-{
-  print "<IMG SRC=\"http://folding.bmc.uu.se/cgi-bin/nph-count?width=6&link=index.html\">";
-  print "<HR NOSHADE>\n";
-}
 function showFooter()
 {
 print <<<_SCHAAP_
