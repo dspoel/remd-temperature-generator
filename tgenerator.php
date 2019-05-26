@@ -108,7 +108,7 @@ function myeval($m12, $s12, $CC, $u) {
 function myintegral($m12, $s12, $CC) {
   $int  = 0.0;
   $umax = $m12+5*$s12;
-  $du   = 0.5;
+  $du   = $umax/100;
   if ($debug > 1) {
     print("umax = $umax m12 = $m12 s12 = $s12 CC = $CC<br>");
   }
