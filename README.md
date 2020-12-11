@@ -6,4 +6,4 @@ Alexandra Patriksson and David van der Spoel, A temperature predictor for parall
 
 A running version of the webserver is here:
 
-http://folding.bmc.uu.se/remd
+http://virtualchemistry.org/remd-temperature-generator/
